@@ -2,7 +2,9 @@
 
 using System.Text;
 
-byte[] data = new byte[250000];
+//Every 100,000 bytes = 1 second
+const float SECONDS = 3.5f;
+byte[] data = new byte[(int)(SECONDS * 100000)];
 const int SUBCHUNKSIZE = 16;
 const short AUDIOFORMAT = 1;
 const short BITSPERSAMPLE = 16; //2 bytes per sample
