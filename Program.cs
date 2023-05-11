@@ -1,5 +1,6 @@
 ﻿//DOCS http://soundfile.sapp.org/doc/WaveFormat/
 
+using System.Diagnostics;
 using System.Text;
 
 //Every 100,000 bytes = 1 second
@@ -16,7 +17,7 @@ int subChunk2Size = data.Length * NUMCHANNELS * (BITSPERSAMPLE / 8);
 
 int chunkSize = 4 + (8 + SUBCHUNKSIZE) + (8 + subChunk2Size);
 
-string path = Path.Combine(Directory.GetCurrentDirectory(), "test.wav");
+string path = Path.Combine(Environment.CurrentDirectory, "test.wav");
 Console.WriteLine($"Saving to {path}");
 using(FileStream fs = new FileStream(path, FileMode.Create))
 {
@@ -45,8 +46,8 @@ using(FileStream fs = new FileStream(path, FileMode.Create))
         {
             data[i] = 128;
         }
-        int oneEighth = data.Length / 8, count = 0;
-        float baseFreq = 440.0f;
+        int oneEighth = data.Length / 8;
+        float baseFreq = 523.28f;
 
         float[] scaleFrequencies = GetMajorScaleFrequencies(baseFreq);
         int scaleFrequencyReadIndex = 0;
@@ -54,12 +55,14 @@ using(FileStream fs = new FileStream(path, FileMode.Create))
         {
             if(i != 0 && i % oneEighth == 0)
                 scaleFrequencyReadIndex++;
-            data[i] = (byte)(data[count] + volume * Math.Sin(i * multiplier * scaleFrequencies[scaleFrequencyReadIndex]));
+            data[i] = (byte)(data[i] + volume * Math.Sin(i * multiplier * scaleFrequencies[scaleFrequencyReadIndex]));
         }
         bw.Write(data);
     }
+    Console.WriteLine("Done writing to file.");
 }
-
+Console.WriteLine("Attempting to open file for playback...");
+Process.Start("explorer.exe", "/open, " + path);
 static byte[] GetBytes(string str)
 {
     return Encoding.ASCII.GetBytes(str);
