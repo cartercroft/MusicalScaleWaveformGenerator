@@ -23,46 +23,56 @@ using(FileStream fs = new FileStream(path, FileMode.Create))
 {
     using(BinaryWriter bw = new BinaryWriter(fs))
     {
-        //File Header
-        bw.Write(GetBytes("RIFF"));
-        bw.Write(chunkSize);
-        bw.Write(GetBytes("WAVE"));
-        bw.Write(GetBytes("fmt"));
-        bw.Write((byte)32);
-        bw.Write(SUBCHUNKSIZE);
-        bw.Write(AUDIOFORMAT);
-        bw.Write(NUMCHANNELS);
-        bw.Write(SAMPLERATE);
-        bw.Write(BYTERATE);
-        bw.Write(BLOCKALIGN);
-        bw.Write(BITSPERSAMPLE);
-        bw.Write(GetBytes("data"));
-        bw.Write(subChunk2Size);
-        //Done writing file header
-
-        double multiplier = 2.0 * Math.PI / SAMPLERATE;
-        int volume = 2;
-        for(int i = 0; i < data.Length; i++)
-        {
+        for(int i = 0; i < data.Length; i++)        
             data[i] = 128;
-        }
-        int oneEighth = data.Length / 8;
-        float baseFreq = 523.28f;
-
-        float[] scaleFrequencies = GetMajorScaleFrequencies(baseFreq);
-        int scaleFrequencyReadIndex = 0;
-        for(int i = 0; i < data.Length; i++)
-        {
-            if(i != 0 && i % oneEighth == 0)
-                scaleFrequencyReadIndex++;
-            data[i] = (byte)(data[i] + volume * Math.Sin(i * multiplier * scaleFrequencies[scaleFrequencyReadIndex]));
-        }
-        bw.Write(data);
+        float aNoteFreq = 440.0f;
+        GetMajorScaleByteData(aNoteFreq, data);
+        WriteWaveformDataToBinaryWriter(bw, data);
     }
     Console.WriteLine("Done writing to file.");
 }
 Console.WriteLine("Attempting to open file for playback...");
 Process.Start("explorer.exe", "/open, " + path);
+Thread.Sleep(5500);
+static void GetMajorScaleByteData(float baseNoteFreq, byte[] data)
+{
+    double multiplier = 2.0 * Math.PI / SAMPLERATE;
+    int volume = 2;
+    int oneEighth = data.Length / 8;
+    float[] scaleFrequencies = GetMajorScaleFrequencies(baseNoteFreq);
+    int scaleFrequencyReadIndex = 0;
+    for (int i = 0; i < data.Length; i++)
+    {
+        if (i != 0 && i % oneEighth == 0)
+            scaleFrequencyReadIndex++;
+        data[i] = (byte)(data[i] + volume * Math.Sin(i * multiplier * scaleFrequencies[scaleFrequencyReadIndex]));
+    }
+}
+static void WriteWaveformDataToBinaryWriter(BinaryWriter bw, byte[] data)
+{
+    WriteWaveformHeader(bw, data);
+    bw.Write(data);
+}
+static void WriteWaveformHeader(BinaryWriter bw, byte[] data)
+{
+    int subChunk2Size = data.Length * NUMCHANNELS * (BITSPERSAMPLE / 8);
+    int chunkSize = 4 + (8 + SUBCHUNKSIZE) + (8 + subChunk2Size);
+
+    bw.Write(GetBytes("RIFF"));
+    bw.Write(chunkSize);
+    bw.Write(GetBytes("WAVE"));
+    bw.Write(GetBytes("fmt"));
+    bw.Write((byte)32);
+    bw.Write(SUBCHUNKSIZE);
+    bw.Write(AUDIOFORMAT);
+    bw.Write(NUMCHANNELS);
+    bw.Write(SAMPLERATE);
+    bw.Write(BYTERATE);
+    bw.Write(BLOCKALIGN);
+    bw.Write(BITSPERSAMPLE);
+    bw.Write(GetBytes("data"));
+    bw.Write(subChunk2Size);
+}
 static byte[] GetBytes(string str)
 {
     return Encoding.ASCII.GetBytes(str);
@@ -92,6 +102,17 @@ static float[] GetScaleFrequenciesFromInterval(float baseFreq, string intervals)
 
         freqs[i] = freqs[i - 1] * factor;
         intervals = intervals.Substring(1);
+    }
+    return freqs;
+}
+static float[] GetAllBaseNoteFrequencies(float baseFreq)
+{
+    float[] freqs = new float[12];
+    freqs[0] = baseFreq;
+    for(int i = 1; i < freqs.Length; i++)
+    {
+        float factor = (float)Math.Pow(2.0, 1 / 12.0f);
+        freqs[i] = freqs[i - 1] * factor;
     }
     return freqs;
 }
