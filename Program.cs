@@ -46,7 +46,7 @@ using(FileStream fs = new FileStream(path, FileMode.Create))
             data[i] = 128;
         }
         int oneEighth = data.Length / 8, count = 0;
-        float baseFreq = 532.28f;
+        float baseFreq = 440.0f;
 
         float[] scaleFrequencies = GetMajorScaleFrequencies(baseFreq);
         int scaleFrequencyReadIndex = 0;
@@ -64,24 +64,31 @@ static byte[] GetBytes(string str)
 {
     return Encoding.ASCII.GetBytes(str);
 }
-
 static float[] GetMajorScaleFrequencies(float baseFreq) 
 {
     string intervals = "WWHWWWH";
+    return GetScaleFrequenciesFromInterval(baseFreq, intervals);
+}
+static float[] GetMinorScaleFrequencies(float baseFreq)
+{
+    string intervals = "WHWWHWW";
+    return GetScaleFrequenciesFromInterval(baseFreq, intervals);
+}
+static float[] GetScaleFrequenciesFromInterval(float baseFreq, string intervals)
+{
     float[] freqs = new float[8];
     freqs[0] = baseFreq;
     for (int i = 1; i < freqs.Length; i++)
     {
         float factor;
-        
+
         if (intervals[0] == 'W')
-            factor = (float)Math.Pow(2.0, 2/12.0f);
+            factor = (float)Math.Pow(2.0, 2 / 12.0f);
         else
-            factor = (float)Math.Pow(2.0, 1 /12.0f);
-        
+            factor = (float)Math.Pow(2.0, 1 / 12.0f);
+
         freqs[i] = freqs[i - 1] * factor;
         intervals = intervals.Substring(1);
     }
-
     return freqs;
 }
