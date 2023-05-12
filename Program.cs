@@ -5,7 +5,6 @@ using System.Text;
 
 //Every 100,000 bytes = 1 second
 const float SECONDS = 3.5f;
-byte[] data = new byte[(int)(SECONDS * 100000)];
 const int SUBCHUNKSIZE = 16;
 const short AUDIOFORMAT = 1;
 const short BITSPERSAMPLE = 16; //2 bytes per sample
@@ -13,27 +12,36 @@ const short NUMCHANNELS = 1;
 const int SAMPLERATE = 44100;
 const int BYTERATE = SAMPLERATE * NUMCHANNELS * (BITSPERSAMPLE / 8);
 const short BLOCKALIGN = (short)(NUMCHANNELS * (BITSPERSAMPLE / 8));
-int subChunk2Size = data.Length * NUMCHANNELS * (BITSPERSAMPLE / 8);
 
-int chunkSize = 4 + (8 + SUBCHUNKSIZE) + (8 + subChunk2Size);
-
-string path = Path.Combine(Environment.CurrentDirectory, "test.wav");
-Console.WriteLine($"Saving to {path}");
-using(FileStream fs = new FileStream(path, FileMode.Create))
+string fileName = "test_";
+string ext = ".wav";
+float aNoteFreq = 440.0f;
+float[] baseNoteFreqs = GetAllBaseNoteFrequencies(aNoteFreq);
+foreach(float freq in baseNoteFreqs)
 {
-    using(BinaryWriter bw = new BinaryWriter(fs))
+    string saveFileName = $"{fileName}_{freq}Hz{ext}"; 
+    string path = Path.Combine(Environment.CurrentDirectory, saveFileName);
+
+    byte[] data = new byte[(int)(SECONDS * 100000)];
+    int subChunk2Size = data.Length * NUMCHANNELS * (BITSPERSAMPLE / 8);
+    int chunkSize = 4 + (8 + SUBCHUNKSIZE) + (8 + subChunk2Size);
+
+    using(FileStream fs = new FileStream(path, FileMode.Create))
     {
-        for(int i = 0; i < data.Length; i++)        
-            data[i] = 128;
-        float aNoteFreq = 440.0f;
-        GetMajorScaleByteData(aNoteFreq, data);
-        WriteWaveformDataToBinaryWriter(bw, data);
-    }
-    Console.WriteLine("Done writing to file.");
+        Console.WriteLine($"Saving to {path}.");
+        using(BinaryWriter bw = new BinaryWriter(fs))
+        {
+            for(int i = 0; i < data.Length; i++)        
+                data[i] = 128;
+
+            GetMajorScaleByteData(freq, data);
+            WriteWaveformDataToBinaryWriter(bw, data);
+        }
+        Console.WriteLine("Done writing to file.");
+    } 
 }
-Console.WriteLine("Attempting to open file for playback...");
-Process.Start("explorer.exe", "/open, " + path);
-Thread.Sleep(5500);
+//Console.WriteLine("Attempting to open file for playback...");
+//Process.Start("explorer.exe", "/open, " + path);
 static void GetMajorScaleByteData(float baseNoteFreq, byte[] data)
 {
     double multiplier = 2.0 * Math.PI / SAMPLERATE;
